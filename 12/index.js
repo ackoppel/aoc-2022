@@ -12,6 +12,20 @@ class Solver {
       .split('\n')
       .map((row) => row.split('').map((col) => col.charCodeAt(0)));
 
+  mapCoordinatesByLevel = (map, level) =>
+    map.reduce((acc, current, x) => {
+      current.forEach((value, y) => {
+        if (map[x][y] === level) {
+          acc[`${x}-${y}`] = {
+            x,
+            y,
+            value,
+          };
+        }
+      });
+      return acc;
+    }, {});
+
   findShortestPathToSignal = () => {
     const map = this.parseInput();
     const { start, destination } = this.getInitialCoordinates(map);
@@ -26,6 +40,36 @@ class Solver {
     console.log('Path to destination -> ', pathToDestination);
 
     return pathToDestination;
+  };
+
+  findShortestPath = () => {
+    const map = this.parseInput();
+    const { start, destination } = this.getInitialCoordinates(map);
+    const path = this.findPathToNextLevel(start, destination, map, [start]);
+  };
+
+  findPathToNextLevel = (currentCoordinates, destination, map, visitedPath) => {
+    const currentStep = map[currentCoordinates[0]][currentCoordinates[1]];
+    const nextStep =
+      currentStep === this.HighestPoint ? this.End : currentStep + 1;
+
+    const neighborCoordinates = this.getNeighborCoordinates(currentCoordinates);
+
+    /** @notice Check if any direct neighbor satisfies the level */
+    for (let i = 0; i < neighborCoordinates.length; i++) {
+      const [xN, yN] = neighborCoordinates[i];
+      if (map[xN][yN] === nextStep) {
+        return this.findPathToNextLevel([xN, yN], destination, map, [
+          ...visitedPath,
+          currentCoordinates,
+        ]);
+      }
+    }
+
+    const destinationLevel = this.mapCoordinatesByLevel(map, nextStep);
+    /** @todo -> Find closest coordinate (Linear path) */
+
+    /** @todo -> Map coordinates as close as possible to the Linear path */
   };
 
   findPathToDestination = (
@@ -47,7 +91,6 @@ class Solver {
         (n) => n[0] === destination[0] && n[1] === destination[1]
       )
     ) {
-      // console.log('Neighbors to visit, found highest -> ', neighborsToVisit);
       return visitedCoordinates.length;
     }
     const paths = neighborsToVisit.map((neighbor) =>
@@ -57,71 +100,43 @@ class Solver {
       ])
     );
 
-    // console.log('Paths -> ', paths);
-
     const acceptablePaths = paths.filter((item) => !!item);
-    if (acceptablePaths.length) {
-      // console.log('Acceptable lengths -> ', acceptablePaths);
-    }
     return acceptablePaths.length ? Math.min(...acceptablePaths) : null;
   };
 
   getNeighborsToVisit = (currentCoordinates, map, visitedCoordinates) => {
-    // console.log('Current coordinates -> ', currentCoordinates);
-
     const [x, y] = currentCoordinates;
     const currentElement = map[x][y];
+    return this.getNeighborCoordinates(currentCoordinates).filter(
+      (coordinates) => {
+        const [xN, yN] = coordinates;
+        const elementOnMap = map[xN]?.[yN];
+
+        const achievableElement =
+          elementOnMap &&
+          (currentElement === this.Start ||
+            elementOnMap - 1 === currentElement ||
+            elementOnMap === currentElement);
+
+        return (
+          (currentElement === this.HighestPoint && elementOnMap === this.End) ||
+          (achievableElement &&
+            !visitedCoordinates.some(
+              (visited) => visited[0] === xN && visited[1] === yN
+            ))
+        );
+      }
+    );
+  };
+
+  getNeighborCoordinates = (currentCoordinates) => {
+    const [x, y] = currentCoordinates;
     return [
       [x + 1, y],
       [x - 1, y],
       [x, y + 1],
       [x, y - 1],
-    ].filter((coordinates) => {
-      const [xN, yN] = coordinates;
-      const elementOnMap = map[xN]?.[yN];
-      if (
-        currentElement === this.HighestPoint &&
-        elementOnMap === this.End
-      ) {
-        // console.log('\n\n\n Found z');
-        // console.log('currentElement -> ', currentElement);
-        // console.log('elementOnMap -> ', elementOnMap);
-        // console.log('coordinates -> ', coordinates);
-        // console.log('visited -> ', visitedCoordinates);
-      }
-
-      // if (elementOnMap >= currentElement) {
-      //   console.log('\n\n\n');
-      //   console.log('elementOnMap -> ', elementOnMap);
-      //   console.log('currentElement -> ', currentElement);
-      // }
-
-      // if (
-      //   elementOnMap - 1 === currentElement ||
-      //   elementOnMap === currentElement
-      // ) {
-      //   console.log('\n\n\n');
-      //   console.log('elementOnMap -> ', elementOnMap);
-      //   console.log('currentElement -> ', currentElement);
-      // }
-      const achievableElement =
-        elementOnMap &&
-        (currentElement === this.Start ||
-          elementOnMap - 1 === currentElement ||
-          elementOnMap === currentElement);
-
-      return (
-        (currentElement === this.HighestPoint &&
-          elementOnMap === this.End) ||
-        (achievableElement &&
-          !visitedCoordinates.some(
-            (visited) => visited[0] === xN && visited[1] === yN
-          ))
-      );
-
-      // (elementOnMap - 1 === currentElement ||
-      //   elementOnMap === currentElement)
-    });
+    ];
   };
 
   getInitialCoordinates = (map) => {
