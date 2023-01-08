@@ -49,27 +49,81 @@ class Solver {
   };
 
   findPathToNextLevel = (currentCoordinates, destination, map, visitedPath) => {
-    const currentStep = map[currentCoordinates[0]][currentCoordinates[1]];
-    const nextStep =
-      currentStep === this.HighestPoint ? this.End : currentStep + 1;
+    const currentLevel = map[currentCoordinates[0]][currentCoordinates[1]];
+    const targetLevel =
+      currentLevel === this.HighestPoint ? this.End : currentLevel + 1;
 
-    const neighborCoordinates = this.getNeighborCoordinates(currentCoordinates);
+    const targetLevelMapping = this.mapCoordinatesByLevel(map, targetLevel);
+    /** @todo -> Find closest coordinate (Linear path) */
+    const { /*closestPoint,*/ directNeighbors } =
+      this.findClosestPointToTargetLevel(
+        currentCoordinates,
+        targetLevelMapping,
+        map
+      );
 
-    /** @notice Check if any direct neighbor satisfies the level */
-    for (let i = 0; i < neighborCoordinates.length; i++) {
-      const [xN, yN] = neighborCoordinates[i];
-      if (map[xN][yN] === nextStep) {
-        return this.findPathToNextLevel([xN, yN], destination, map, [
-          ...visitedPath,
-          currentCoordinates,
-        ]);
-      }
+    if (directNeighbors.length) {
+      const paths = directNeighbors.map((n) =>
+        this.findPathToNextLevel(n, destination, map, [...visitedPath, n])
+      );
+      return paths.length ? Math.min(...paths) : null;
     }
 
-    const destinationLevel = this.mapCoordinatesByLevel(map, nextStep);
-    /** @todo -> Find closest coordinate (Linear path) */
-
     /** @todo -> Map coordinates as close as possible to the Linear path */
+    // if (closestPoint) {
+    //
+    // }
+  };
+
+  findClosestPointToTargetLevel = (
+    currentCoordinates,
+    targetLevelMapping,
+    map
+  ) => {
+    const currentLevel = map[currentCoordinates[0]][currentCoordinates[1]];
+    return Object.values(targetLevelMapping).reduce(
+      (acc, current) => {
+        const { x, y } = current;
+        const neighbors = this.getNeighborCoordinates([x, y]);
+        if (
+          neighbors.some(
+            (coordinates) =>
+              map[coordinates[0]]?.[coordinates[1]] === currentLevel
+          )
+        ) {
+          // Check if direct neighbor
+          const directNeighbor = neighbors.find(
+            ([xN, yN]) =>
+              xN === currentCoordinates[0] && yN === currentCoordinates[1]
+          );
+          if (directNeighbor) {
+            acc.directNeighbors.push(directNeighbor);
+            return acc;
+          }
+
+          // Calculate distance
+          const distance = this.getDistanceBetweenPoints(
+            currentCoordinates,
+            current
+          );
+          if (distance < acc.closestDistance) {
+            acc.closestPoint = current;
+            acc.closestDistance = distance;
+          }
+        }
+        return acc;
+      },
+      { closestPoint: null, closestDistance: 0, directNeighbors: [] }
+    );
+  };
+
+  getDistanceBetweenPoints = (from, to) => {
+    const [x, y] = from;
+    const [xT, yT] = to;
+
+    const xDiffSquared = (xT - x) ** 2;
+    const yDiffSquared = (yT - y) ** 2;
+    return Math.sqrt(xDiffSquared + yDiffSquared);
   };
 
   findPathToDestination = (
