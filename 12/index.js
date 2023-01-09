@@ -32,8 +32,6 @@ class Solver {
 
   findShortestPath = (start) => {
     const map = this.Map;
-    const destinationLevel =
-      map[this.EndCoordinates[0]][this.EndCoordinates[1]];
 
     const queue = [start];
     const closed = Array.from({ length: map.length }).map(() =>
@@ -55,7 +53,7 @@ class Solver {
       const currentLevel = map[x][y];
       const currentDetails = details[x][y];
 
-      if (currentLevel === destinationLevel) {
+      if (currentLevel === this.End) {
         return currentDetails.steps;
       }
 
