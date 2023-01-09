@@ -1,12 +1,10 @@
-// export const input = `
-// Sabqponm
+// export const input = `Sabqponm
 // abcryxxl
 // accszExk
 // acctuvwj
 // abdefghi`;
 
-export const input = `
-abaaaaacaaaacccccccccaaaaaaccccccccccccccccccccccccccccccccccaaaaaa
+export const input = `abaaaaacaaaacccccccccaaaaaaccccccccccccccccccccccccccccccccccaaaaaa
 abaaaaacaaaaccccaaaaaaaaaacccccccccccccccccccccccccccccccccccaaaaaa
 abaaacccaaaaccccaaaaaaaaaaacccaacccccccccccaacccccccccccccccccaaaaa
 abaaaacccaacccccaaaaaaaaaaaaaaaaacccccccccccacccccccccccccccccccaaa
