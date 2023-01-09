@@ -1,9 +1,3 @@
-// export const input = `Sabqponm
-// abcryxxl
-// accszExk
-// acctuvwj
-// abdefghi`;
-
 export const input = `abaaaaacaaaacccccccccaaaaaaccccccccccccccccccccccccccccccccccaaaaaa
 abaaaaacaaaaccccaaaaaaaaaacccccccccccccccccccccccccccccccccccaaaaaa
 abaaacccaaaaccccaaaaaaaaaaacccaacccccccccccaacccccccccccccccccaaaaa

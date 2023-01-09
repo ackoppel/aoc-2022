@@ -4,6 +4,7 @@ class Solver {
   Start = 'S'.charCodeAt(0);
 
   End = 'E'.charCodeAt(0);
+  EndCoordinates;
 
   LowestPoint = 'a'.charCodeAt(0);
 
@@ -11,14 +12,28 @@ class Solver {
 
   BaseValue = null;
 
-  parseInput = () =>
-    input
-      .split('\n')
-      .map((row) => row.split('').map((col) => col.charCodeAt(0)));
+  Map;
 
-  findShortestPath = () => {
-    const map = this.parseInput();
-    const { start, destination } = this.getInitialCoordinates(map);
+  constructor() {
+    this.Map = this.parseInput();
+  }
+
+  parseInput = () =>
+    input.split('\n').map((row, rowIndex) =>
+      row.split('').map((col, colIndex) => {
+        const charCode = col.charCodeAt(0);
+        const coordinates = [rowIndex, colIndex];
+        if (charCode === this.End) {
+          this.EndCoordinates = coordinates;
+        }
+        return charCode;
+      })
+    );
+
+  findShortestPath = (start) => {
+    const map = this.Map;
+    const destinationLevel =
+      map[this.EndCoordinates[0]][this.EndCoordinates[1]];
 
     const queue = [start];
     const closed = Array.from({ length: map.length }).map(() =>
@@ -39,6 +54,11 @@ class Solver {
       const [x, y] = currentCoordinates;
       const currentLevel = map[x][y];
       const currentDetails = details[x][y];
+
+      if (currentLevel === destinationLevel) {
+        return currentDetails.steps;
+      }
+
       const currentSteps = currentDetails.steps + 1;
 
       closed[x][y] = true;
@@ -51,23 +71,14 @@ class Solver {
         const [xN, yN] = neighbor;
         const neighborLevel = map[xN]?.[yN];
 
-        /** @notice Current is the Highest point and Neighbor is target */
-        if (
-          currentLevel === this.HighestPoint &&
-          destination[0] === xN &&
-          destination[1] === yN
-        ) {
-          return currentSteps;
-        }
-
         /** @notice Step is valid and not checked as parent,
          *          calculate estimation and compare.       */
         if (
           this.isValidStep(currentLevel, neighborLevel, map) &&
           !closed[xN][yN]
         ) {
-          const newDistance = this.getDistanceHeuristics(neighbor, destination);
-          const newEstimation = currentSteps + newDistance;
+          const newEstimation =
+            currentSteps + this.getManhattanDistance(neighbor);
 
           const neighborDetails = details[xN][yN];
           if (
@@ -77,9 +88,7 @@ class Solver {
             queue.push(neighbor);
 
             neighborDetails.steps = currentSteps;
-            neighborDetails.distance = newDistance;
             neighborDetails.estimation = newEstimation;
-            neighborDetails.parentCoordinates = [...currentCoordinates];
           }
         }
       }
@@ -94,14 +103,14 @@ class Solver {
       if (currentLevel === this.HighestPoint) {
         return targetLevel === this.End;
       }
-      return targetLevel <= currentLevel + 1;
+      return targetLevel <= currentLevel + 1 && targetLevel !== this.End;
     }
     return false;
   };
 
-  getDistanceHeuristics = (current, target) => {
+  getManhattanDistance = (current) => {
     const [x, y] = current;
-    const [xT, yT] = target;
+    const [xT, yT] = this.EndCoordinates;
     return Math.abs(x - xT) + Math.abs(y - yT);
   };
 
@@ -115,35 +124,43 @@ class Solver {
     ];
   };
 
-  getInitialCoordinates = (map) => {
-    const coordinates = {
-      start: null,
-      destination: null,
-    };
-
-    for (let i = 0; i < map.length; i++) {
-      const row = map[i];
-      for (let j = 0; j < row.length; j++) {
-        const column = row[j];
-        const currentCoordinates = [i, j];
-
-        if (column === this.Start) {
-          coordinates.start = currentCoordinates;
-        }
-        if (column === this.End) {
-          coordinates.destination = currentCoordinates;
-        }
-
-        if (!!coordinates.start && !!coordinates.destination) {
-          return coordinates;
-        }
-      }
-    }
-
-    return coordinates;
+  findShortestPathFromLevel = (level) => {
+    const potentialStartingPoints =
+      this.getLevelCoordinatesWithValidNeighbors(level);
+    const steps = potentialStartingPoints.map((coordinates) =>
+      this.findShortestPath(coordinates)
+    );
+    return Math.min(...steps);
   };
+
+  getLevelCoordinatesWithValidNeighbors = (level) =>
+    this.Map.reduce((acc, row, rowIndex) => {
+      row.forEach((column, columnIndex) => {
+        const coordinates = [rowIndex, columnIndex];
+        if (
+          column === level &&
+          this.getNeighborCoordinates(coordinates).some((neighbor) => {
+            const targetLevel = this.Map[neighbor[0]]?.[neighbor[1]];
+            return (
+              targetLevel !== level && this.isValidStep(level, targetLevel)
+            );
+          })
+        ) {
+          acc.push(coordinates);
+        }
+      });
+      return acc;
+    }, []);
 }
 
 const solver = new Solver();
 
-console.log('Fewest steps to reach best signal -> ', solver.findShortestPath());
+console.log(
+  'Fewest steps to reach best signal -> ',
+  solver.findShortestPathFromLevel(solver.Start)
+);
+
+console.log(
+  'Fewest steps from closest low point -> ',
+  solver.findShortestPathFromLevel(solver.LowestPoint)
+);
