@@ -3,17 +3,43 @@ import { input } from './input.js';
 class Solver {
   /** Returns pairs */
   parseInput = () => input.split(`\n\n`);
-  parseRow = (row) => JSON.parse(row);
+  /** @param row {string} */
+  parseRow = (row) => row.split('\n').map((r) => JSON.parse(r));
 
+  /** PT II */
+  dividerPackets = [[[2]], [[6]]];
+
+  /** @notice PT I */
   getSumOfIndicesOfOrderedPairs = () =>
     this.parseInput().reduce((acc, current, index) => {
-      const [first, second] = current.split('\n').map(this.parseRow);
+      const [first, second] = this.parseRow(current);
       const { ordered } = this.pairIsOrdered(first, second);
       if (ordered) {
         acc += index + 1;
       }
       return acc;
     }, 0);
+
+  /** @notice PT II */
+  findDecoderKey = () => {
+    const dividersAsStrings = this.dividerPackets.map((packet) =>
+      JSON.stringify(packet)
+    );
+    return [
+      ...this.dividerPackets,
+      ...this.parseInput().reduce(
+        (acc, current) => [...acc, ...this.parseRow(current)],
+        []
+      ),
+    ]
+      .sort((a, b) => (this.pairIsOrdered(a, b).ordered ? -1 : 1))
+      .reduce((acc, current, index) => {
+        if (dividersAsStrings.includes(JSON.stringify(current))) {
+          acc *= index + 1;
+        }
+        return acc;
+      }, 1);
+  };
 
   pairIsOrdered = (left, right) => {
     const result = {
@@ -68,3 +94,5 @@ console.log(
   'Sum of indices of ordered pairs -> ',
   solver.getSumOfIndicesOfOrderedPairs()
 );
+
+console.log('Distress signal decoder key -> ', solver.findDecoderKey());
