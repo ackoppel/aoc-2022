@@ -1,6 +1,8 @@
 import { input } from './input.js';
 
 class Solver {
+  freqMultiplier = 4000000;
+
   getValueFromAssignment = (row) =>
     parseInt(row.substring(row.indexOf('=') + 1), 10);
 
@@ -51,7 +53,6 @@ class Solver {
       },
       {
         sensors: [],
-        /** @todo --> Remove beacons */
         beacons: {},
       }
     );
@@ -70,46 +71,49 @@ class Solver {
       }, [])
       .sort((a, b) => a[0] - b[0]);
 
+  /** Part I */
+  findCoveredAreaAtY = (y) => {
+    const { sensors, beacons } = this.parseInput();
+    return this.countFilledPositionsAtY(sensors, y, beacons).filled;
+  };
+
+  /** Part II */
   findTuningFrequency = () => {
     const { sensors, beacons } = this.parseInput();
-    console.log('\n\n\n');
-    console.log('Beacons --> ', beacons);
+
     const yRange = Object.keys(beacons).map((yBeacon) => parseInt(yBeacon, 10));
     const yMin = Math.min(...yRange);
     const yMax = Math.max(...yRange);
+
     for (let i = yMin; i <= yMax; i++) {
-      const { encounteredFreeSpace } = this.countFilledPositionsAtY(sensors, i);
-      if (encounteredFreeSpace) {
-        console.log('Free space!');
+      const { freeSpace } = this.countFilledPositionsAtY(sensors, i, beacons);
+      if (freeSpace) {
+        const [x, y] = freeSpace;
+        return x * this.freqMultiplier + y;
       }
     }
   };
 
-  countFilledPositionsAtY = (sensors, y) => {
+  countFilledPositionsAtY = (sensors, y, beacons) => {
     const connections = this.getConnectionsAtY(sensors, y);
-
-    // const beaconsAtY = beacons[y];
+    const beaconsAtY = beacons[y];
 
     const firstFrom = connections[0]?.[0];
     const firstTo = connections[0]?.[1];
 
-    const { filled, encounteredFreeSpace } = connections.reduce(
+    const { filled, encounteredFreeSpace, freeSpace } = connections.reduce(
       (acc, [xFrom, xTo]) => {
         /** New line */
-        if (xFrom > acc.currentEnd) {
-          // acc.currentStart = xFrom;
-          // acc.currentEnd = xTo ? xTo : xFrom;
-          // acc.filled += this.getFilledBetween(
-          //   acc.currentStart,
-          //   acc.currentEnd,
-          //   beaconsAtY
-          // );
-          console.log('\n\n');
-          console.log('Hey!');
-          console.log('acc -> ', acc);
-          console.log('xFrom -> ', xFrom);
-          console.log('xTo -> ', xTo);
-          acc.encounteredFreeSpace = true;
+        if (xFrom > acc.currentEnd + 1) {
+          acc.freeSpace.push([acc.currentEnd + 1, y]);
+
+          acc.currentStart = xFrom;
+          acc.currentEnd = xTo ? xTo : xFrom;
+          acc.filled += this.getFilledBetween(
+            acc.currentStart,
+            acc.currentEnd,
+            beaconsAtY
+          );
         } else if (xTo > acc.currentEnd) {
           /** Common part got longer */
           acc.filled += this.getFilledBetween(acc.currentEnd, xTo);
@@ -121,29 +125,13 @@ class Solver {
         currentStart: firstFrom,
         currentEnd: firstTo,
         filled: this.getFilledBetween(firstFrom, firstTo),
-        encounteredFreeSpace: false,
+        freeSpace: [],
       }
     );
-    return { filled, encounteredFreeSpace };
+    return { filled, encounteredFreeSpace, freeSpace: freeSpace[0] };
   };
 
-  getFilledBetween = (fromX, toX) => {
-    return toX - fromX;
-    // const filled = toX - fromX;
-    // console.log('\n');
-    // console.log('__ fromX ', fromX);
-    // console.log('__ toX ', toX);
-    // console.log('__ filled ', filled);
-    // const beaconsBetween = Object.keys(beacons).reduce((acc, xBeacon) => {
-    //   const parsed = parseInt(xBeacon, 10);
-    //   if (parsed >= fromX && parsed <= toX) {
-    //     console.log('Beacon --> ', xBeacon)
-    //     acc += 1;
-    //   }
-    //   return acc;
-    // }, 0);
-    // return filled - beaconsBetween;
-  };
+  getFilledBetween = (fromX, toX) => toX - fromX;
 
   getIntersectionsWithYFromEdges = (edges, y) => [
     ...edges.reduce((intersections, edge) => {
@@ -173,8 +161,8 @@ class Solver {
 const solver = new Solver();
 
 console.log(
-  'Count of positions that can not contain a beacon -> ',
-  solver.countFilledPositionsAtY(solver.parseInput().sensors, 10)
+  'Count of positions that can not contain a beacon at y=2000000 -> ',
+  solver.findCoveredAreaAtY(2000000)
 );
 
 console.log(
